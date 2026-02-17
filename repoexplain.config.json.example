@@ -1,0 +1,34 @@
+{
+  "maxFilesRepo": 200,
+  "maxFilesFolder": 500,
+  "maxFilesFeature": 120,
+  "maxFileSizeKB": 200,
+  "ignorePatterns": [
+    "node_modules",
+    "dist",
+    "build",
+    ".next",
+    ".turbo",
+    ".cache",
+    "coverage",
+    "vendor",
+    ".git"
+  ],
+  "binaryExtensions": [
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".pdf",
+    ".zip",
+    ".gz",
+    ".tar",
+    ".jar",
+    ".class",
+    ".exe",
+    ".dll",
+    ".dylib"
+  ],
+  "engine": "claude",
+  "diagramNodeCap": 20
+}
