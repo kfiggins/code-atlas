@@ -15,6 +15,7 @@ import { extractFacts } from '../facts/extractor.js';
 import { saveFacts } from '../facts/facts-manager.js';
 import { ReportGenerator } from '../report/generator.js';
 import { saveReport } from '../report/report-manager.js';
+import { FeatureFinder } from '../core/feature-finder.js';
 
 interface ScanOptions {
   scope: string;
@@ -86,7 +87,32 @@ export async function scanCommand(options: ScanOptions): Promise<void> {
   // Collect files
   console.log(chalk.cyan('📁 Collecting files...'));
   const collector = new FileCollector(repoRoot, collectionOptions);
-  const result = collector.collect();
+  let result = collector.collect();
+
+  // For feature scope, filter to feature-related files only
+  if (scope.type === 'feature') {
+    console.log(chalk.cyan(`🔍 Searching for feature: "${scope.value}"...`));
+    const featureFinder = new FeatureFinder(repoRoot, scope.value);
+    const featureResult = featureFinder.findFeatureFiles();
+
+    if (featureResult.matchingFiles.length === 0) {
+      console.log(chalk.yellow(`⚠ No files found matching "${scope.value}"`));
+      console.log(chalk.gray('Try a different search query or use folder scope instead.'));
+      return;
+    }
+
+    const filteredFiles = featureFinder.filterToFeatureFiles(result.files, featureResult);
+    const filteredSize = filteredFiles.reduce((sum, f) => sum + f.size, 0);
+
+    result = {
+      files: filteredFiles,
+      skippedFiles: result.skippedFiles,
+      totalSize: filteredSize,
+    };
+
+    console.log(chalk.green(`✓ Found ${featureResult.matchingFiles.length} matching files`));
+    console.log(chalk.gray(`  Filtered to ${result.files.length} feature-related files`));
+  }
 
   console.log(chalk.green(`✓ Collected ${result.files.length} files`));
   if (result.skippedFiles.length > 0) {
