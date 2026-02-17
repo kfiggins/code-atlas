@@ -13,6 +13,8 @@ import {
 } from '../core/manifest.js';
 import { extractFacts } from '../facts/extractor.js';
 import { saveFacts } from '../facts/facts-manager.js';
+import { ReportGenerator } from '../report/generator.js';
+import { saveReport } from '../report/report-manager.js';
 
 interface ScanOptions {
   scope: string;
@@ -144,10 +146,95 @@ export async function scanCommand(options: ScanOptions): Promise<void> {
   saveFacts(repoRoot, scopeId, facts);
   console.log(chalk.green(`✓ Facts extracted: .repoexplain/${scopeId}/facts.json`));
 
-  // TODO: Phase 3 - Call AI engine
-  // TODO: Phase 4 - Generate report
+  // Generate report (placeholder for Phase 4)
+  // In production, this would call the AI engine to analyze files
+  // For now, we generate a basic report from facts only
+  console.log(chalk.cyan('📝 Generating report...'));
+
+  const reportGenerator = new ReportGenerator();
+  const mockMarkdown = generateMockReport(scope, facts);
+  const report = reportGenerator.parseMarkdown(mockMarkdown, scope, result.files.length);
+  const markdownOutput = reportGenerator.generateMarkdown(report);
+
+  saveReport(repoRoot, scopeId, report, markdownOutput);
+  console.log(chalk.green(`✓ Report generated: .repoexplain/${scopeId}/report.json`));
+  console.log(chalk.green(`✓ Report generated: .repoexplain/${scopeId}/report.md`));
 
   console.log();
   console.log(chalk.green('✓ Scan complete!'));
   console.log(chalk.gray(`  Run 'repoexplain status' to see details`));
+  console.log(chalk.gray(`  Run 'repoexplain view' to view the report`));
+}
+
+// Temporary mock report generator (Phase 4 will use real AI engine)
+function generateMockReport(scope: any, facts: any): string {
+  const langs = facts.languages.map((l: any) => l.language).join(', ') || 'Unknown';
+  const configs = facts.configs.map((c: any) => c.type).join(', ') || 'None';
+  const entrypoints = facts.entrypoints.join(', ') || 'None detected';
+
+  return `
+# 1. Executive Map
+
+This ${scope.type} contains code written primarily in ${langs}.
+
+**Major Components:**
+- ${facts.totalFiles} files analyzed
+- Configuration: ${configs}
+- Entry points: ${entrypoints}
+
+**Key Dependencies:**
+${facts.configs.length > 0 ? facts.configs.map((c: any) => `- ${c.type}: ${c.path}`).join('\n') : '- None detected'}
+
+# 2. How to Find Things
+
+**Finding specific functionality:**
+- Routes/Endpoints: ${facts.routes.length} files detected
+- Controllers/Handlers: ${facts.controllers.length} files detected
+- Services: ${facts.services.length} files detected
+- Tests: ${facts.tests.length} files detected
+
+# 3. Data Flow Overview
+
+Data flow analysis based on detected files:
+
+\`\`\`mermaid
+flowchart TD
+    Start[Entry Points] --> Routes[Routes/Endpoints]
+    Routes --> Controllers[Controllers]
+    Controllers --> Services[Business Logic]
+    Services --> External[External Systems]
+\`\`\`
+
+# 4. Key Modules and Responsibilities
+
+**Detected Modules:**
+${facts.entrypoints.map((e: string) => `- **${e}**: Application entry point`).join('\n') || '- No key modules identified'}
+${facts.routes.slice(0, 5).map((r: string) => `- **${r}**: Routing logic`).join('\n')}
+
+# 5. Edge Cases and Foot-guns
+
+**Potential Areas of Concern:**
+- Review error handling in entry points
+- Verify database migration ordering
+- Check for race conditions in async code
+
+# 6. Operational Reality
+
+**Running Locally:**
+- Install dependencies based on detected config files
+- Check for .env.example for required environment variables
+
+**Configuration:**
+${facts.configs.map((c: any) => `- ${c.path}`).join('\n') || '- No config files detected'}
+
+# 7. Change Guide
+
+**Before Making Changes:**
+- Review the relevant files in the detected modules
+- Run existing tests: ${facts.tests.length} test files detected
+- Check for database migrations if modifying data layer
+
+**Testing:**
+- Test files located in: ${facts.tests.join(', ') || 'No test files detected'}
+`;
 }
