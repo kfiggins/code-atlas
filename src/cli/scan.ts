@@ -11,6 +11,8 @@ import {
   detectChanges,
   getScopeId,
 } from '../core/manifest.js';
+import { extractFacts } from '../facts/extractor.js';
+import { saveFacts } from '../facts/facts-manager.js';
 
 interface ScanOptions {
   scope: string;
@@ -129,7 +131,19 @@ export async function scanCommand(options: ScanOptions): Promise<void> {
   saveManifest(repoRoot, manifest);
   console.log(chalk.green(`✓ Manifest saved: .repoexplain/${scopeId}/manifest.json`));
 
-  // TODO: Phase 2 - Extract facts
+  // Extract facts
+  console.log(chalk.cyan('🔍 Extracting facts...'));
+  const facts = extractFacts(result.files, result.totalSize);
+
+  if (options.verbose) {
+    console.log(chalk.gray(`  Languages: ${facts.languages.map(l => l.language).join(', ')}`));
+    console.log(chalk.gray(`  Configs: ${facts.configs.length}`));
+    console.log(chalk.gray(`  Entrypoints: ${facts.entrypoints.length}`));
+  }
+
+  saveFacts(repoRoot, scopeId, facts);
+  console.log(chalk.green(`✓ Facts extracted: .repoexplain/${scopeId}/facts.json`));
+
   // TODO: Phase 3 - Call AI engine
   // TODO: Phase 4 - Generate report
 
